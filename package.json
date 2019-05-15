@@ -1,0 +1,19 @@
+{
+  "name": "fs_mooc_osa4",
+  "version": "1.0.0",
+  "description": "Fullstack MOOC osa4",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ilkhau/fs_mooc_osa4.git"
+  },
+  "author": "Ilkka Hauta-aho <ilkka.hauta-aho@miiliconsulting.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ilkhau/fs_mooc_osa4/issues"
+  },
+  "homepage": "https://github.com/ilkhau/fs_mooc_osa4#readme"
+}

@@ -5,19 +5,17 @@ const Blog = require('../models/blog')
 const api = supertest(app)
 const logger = require('../utils/logger')
 const helper = require('./test_helper')
-const config = require('../utils/config')
 
 beforeEach(async () => {
-    logger.test('Config: ', config)
     logger.test('Deleting Blogs')
     await Blog.deleteMany({})
 
-    helper.initialBlogs
-        .map(b => new Blog(b))
-        .forEach(async (b) => await b.save())
-
-    logger.test('Initial blogs stored to DB')
-    helper.logBlogs()
+    await helper.initialBlogs
+        .forEach(async (b) => {
+            let blog = new Blog(b)
+            await blog.save()
+            logger.test('Blog saved to DB: ', blog)
+        })
 })
 
 describe('Getting notes tests', () => {
@@ -62,6 +60,54 @@ describe('Adding new notes', () => {
 
         const urls = blogs.body.map(b => b.url)
         expect(urls).toContain(newBlog.url)
+    })
+
+    test('Likes set automatically to 0', async () => {
+
+        const newBlog = {
+            title: 'MTV uriheilu',
+            author: 'Petteri Lehto',
+            url: 'https://www.mtv3.fi/urheilu'
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+
+        const blog = await Blog.findOne({ title: newBlog.title })
+        expect(blog.likes).toBe(0)
+    })
+
+    test('Cannot add with empty url', async () => {
+        const newBlog = {
+            title: 'MTV uriheilu',
+            author: 'Petteri Lehto'
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(400)
+
+        const blogs = await api.get('/api/blogs')
+        expect(blogs.body.length).toBe(helper.initialBlogs.length)
+
+    })
+
+    test('Cannot add with empty title', async () => {
+        const newBlog = {
+            author: 'Petteri Lehto',
+            url: 'https://www.mtv3.fi/urheilu'
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(400)
+
+        const blogs = await api.get('/api/blogs')
+        expect(blogs.body.length).toBe(helper.initialBlogs.length)
+
     })
 })
 

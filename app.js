@@ -6,14 +6,15 @@ const mongoose = require('mongoose')
 const config = require('./utils/config')
 const blogs = require('./controllers/blogs')
 const middleware = require('./utils/middleware')
+const logger = require('./utils/logger')
 
 const mongoUrl = config.MONGO_CONNECTION_STRING
 
 mongoose.connect(mongoUrl, { useNewUrlParser: true } )
     .then(() => {
-        console.log('Connected to database')
+        logger.info('Connected to database')
     }).catch(err => {
-        console.log(`DB connection error: ${err.message}`)
+        logger.error(`DB connection error: ${err.message}`)
     })
 
 app.use(cors())

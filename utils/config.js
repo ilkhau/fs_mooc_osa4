@@ -5,9 +5,9 @@ const expanded = dotenv.config()
 variableExpansion(expanded)
 
 const setConnectionString = () => {
-    if (process.env === 'test') {
-        return process.env.MONGO_CONNECTION_STRING_TEST
-    } else if (process.env === 'dev') {
+    if (process.env.NODE_ENV === 'test') {
+        return process.env.MONGO_CONNECTION_STRING_LOCAL
+    } else if (process.env.NODE_ENV === 'dev') {
         return process.env.MONGO_CONNECTION_STRING_LOCAL
     }
     return process.env.MONGO_CONNECTION_STRING_REMOTE

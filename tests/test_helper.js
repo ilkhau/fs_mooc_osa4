@@ -1,5 +1,24 @@
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const logger = require('../utils/logger')
+
+const initialUsers = [
+    {
+        username: 'mattiv',
+        name: 'Matti Virtanen',
+        password: '234234234243'
+    },
+    {
+        username: 'maijameik',
+        name: 'Maija Meikäläinen',
+        password: '234234234243'
+    },
+    {
+        username: 'oskariolem',
+        name: 'Oskari Olematon',
+        password: '234234234243'
+    }
+]
 
 const initialBlogs = [
     {
@@ -39,14 +58,37 @@ const initialBlogs = [
         likes: 2
     }]
 
+const logUsers = async () => {
+    const usersAsJson = await usersInDb()
+    usersAsJson.forEach(b => logger.test('User: ', b))
+}
+
 const logBlogs = async () => {
     const blogsAsJson = await blogsInDb()
     blogsAsJson.forEach(b => logger.test('Blog: ', b))
 }
 
+const usersInDb = async () => {
+    const users = await User.find({})
+    return users.map(u => u.toJSON())
+}
+
 const blogsInDb = async () => {
     const blogs = await Blog.find({})
     return blogs.map(b => b.toJSON())
+}
+
+const nonExistingUserId = async () => {
+    const user = new User({
+        username: 'remove.com',
+        name: 'removed',
+        password: 'https://www.remove.me'
+    })
+
+    await user.save()
+    await user.remove()
+
+    return user._id.toString()
 }
 
 const nonExistingId = async () => {
@@ -64,5 +106,6 @@ const nonExistingId = async () => {
 }
 
 module.exports = {
-    initialBlogs, logBlogs, blogsInDb, nonExistingId
+    initialBlogs, logBlogs, blogsInDb, nonExistingId,
+    initialUsers, logUsers, usersInDb, nonExistingUserId
 }

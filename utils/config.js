@@ -1,6 +1,8 @@
 const dotenv = require('dotenv')
 const variableExpansion = require('dotenv-expand')
 const expanded = dotenv.config()
+const mongoose = require('mongoose')
+mongoose.set('useFindAndModify', false)
 
 variableExpansion(expanded)
 
@@ -15,8 +17,10 @@ const setConnectionString = () => {
 
 let PORT = process.env.PORT
 let MONGO_CONNECTION_STRING = setConnectionString()
+let SALT_ROUNDS = process.env.SALT_ROUNDS || 10
 
 module.exports = {
     MONGO_CONNECTION_STRING,
-    PORT
+    PORT,
+    SALT_ROUNDS
 }

@@ -7,37 +7,58 @@ blogsRouter.get('/', async (request, response) => {
     response.json(blogs.map(blog => blog.toJSON()))
 })
 
-blogsRouter.post('/', async (request, response) => {
+blogsRouter.post('/', async (request, response, next) => {
 
-    const validate = (blog) => {
-        if(blog.url === undefined || blog.url.length === 0) {
-            logger.error('Blog url is empty or undefined')
-            return false
-        }
-
-        if(blog.title === undefined || blog.title.length === 0) {
-            logger.error('Blog title is empty or undefined')
-            return false
-        }
-
-        return true
+    const contentToBlog = (request) => {
+        const body = request.body
+        return new Blog({
+            title: body.title || '',
+            author: body.author || '',
+            url: body.url || '',
+            likes: body.likes || 0,
+        })
     }
 
-    const body = request.body
-    const blog = new Blog({
-        title: body.title || '',
-        author: body.author || '',
-        url: body.url || '',
-        likes: body.likes || 0,
-    })
+    const blog = contentToBlog(request)
 
-    if ( !validate(blog)) {
-        logger.error('Blog is not valid: ', blog)
-        response.status(400).json({ error: 'Blog is not valid' })
-        return
-    } else {
+    try {
         const result = await blog.save()
         response.status(201).json(result)
+    } catch (error) {
+        logger.error('Error storing new blog: ', error)
+        next(error)
+    }
+})
+
+blogsRouter.put('/:id', async (request, response, next) => {
+    try{
+
+        const body = request.body
+        const updated = {
+            likes: body.likes,
+        }
+
+        const updatedBlog = await Blog.findOneAndUpdate(
+            { _id: request.params.id },
+            updated,
+            { new: true })
+
+        logger.info('Updated: ', updatedBlog)
+        response.json(updatedBlog.toJSON())
+
+    } catch (error) {
+        logger.error('Error Updating blog count blog: ', error)
+        next(error)
+    }
+})
+
+blogsRouter.delete('/:id', async (request, response, next) => {
+    try {
+        await Blog.findOneAndRemove({ _id: request.params.id })
+        response.status(204).end()
+    } catch (error) {
+        logger.error('Error deleting blog: ', error)
+        next(error)
     }
 })
 

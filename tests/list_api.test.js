@@ -10,12 +10,16 @@ beforeEach(async () => {
     logger.test('Deleting Blogs')
     await Blog.deleteMany({})
 
-    await helper.initialBlogs
-        .forEach(async (b) => {
-            let blog = new Blog(b)
-            await blog.save()
-            logger.test('Blog saved to DB: ', blog)
+    const storedBlogs = await helper.initialBlogs
+        .map(b => new Blog(b))
+        .map(async (b) => {
+            const stored = await b.save()
+            logger.test('Blog stored to DB: ', stored)
         })
+
+    await Promise.all(storedBlogs)
+    const blogs = await Blog.find({})
+    logger.test(`Initialization done ==> ${blogs.count} blogs stored to database`)
 })
 
 describe('Getting notes tests', () => {
@@ -108,6 +112,46 @@ describe('Adding new notes', () => {
         const blogs = await api.get('/api/blogs')
         expect(blogs.body.length).toBe(helper.initialBlogs.length)
 
+    })
+})
+
+describe('Deleting blogs', () => {
+    test('Deletes blog succesfully', async () => {
+
+        const blogs = await helper.blogsInDb()
+
+        await api
+            .delete(`/api/blogs/${blogs[0].id}`)
+            .expect(204)
+
+        const updatedBlogs = await api.get('/api/blogs')
+        expect(updatedBlogs.body.length).toBe(helper.initialBlogs.length - 1)
+        expect(updatedBlogs.body).toEqual(expect.not.stringMatching(blogs[0].title))
+    })
+})
+
+
+describe('Updates blog correctly', () => {
+    test('Likes are updated', async () => {
+
+        const blogs = await helper.blogsInDb()
+        const updatedLikes = blogs[0].likes + 10
+        const res = await api
+            .put(`/api/blogs/${blogs[0].id}`)
+            .send({ likes: updatedLikes })
+            .expect(200)
+
+        expect(res.body.likes).toBe(updatedLikes)
+    })
+
+    test('Cannot update nonexisting', async () => {
+
+        const blogs = await helper.nonExistingId()
+        const updatedLikes = 10
+        await api
+            .put(`/api/blogs/${blogs[0].id}`)
+            .send({ likes: updatedLikes })
+            .expect(400)
     })
 })
 

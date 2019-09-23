@@ -30,9 +30,10 @@ module.exports = {
             "never"
         ],
         "eqeqeq": "error",
-        "no-trailing-spaces": "error",
+        "no-trailing-spaces": [
+            "error", { "skipBlankLines": true, "ignoreComments": true }],
         "object-curly-spacing": [
-            "error", "always"
+            "error", "never", { "arraysInObjects": true }
         ],
         "arrow-spacing": [
             "error", {"before": true, "after": true}

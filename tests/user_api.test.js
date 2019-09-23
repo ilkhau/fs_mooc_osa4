@@ -5,6 +5,7 @@ const User = require('../models/user')
 const api = supertest(app)
 const logger = require('../utils/logger')
 const helper = require('./test_helper')
+const each = require('jest-each').default;
 
 beforeEach(async () => {
     logger.test('Deleting Blogs')
@@ -45,11 +46,7 @@ describe('Getting users', () => {
 describe('Adding new user', () => {
     test('Add new user succesfully', async () => {
 
-        const newUser = {
-            username: 'newuser',
-            name: 'New User',
-            password: 'password'
-        }
+        const newUser = {username: 'newuser', name: 'New User', password: 'password'}
 
         await api
             .post('/api/users')
@@ -60,28 +57,92 @@ describe('Adding new user', () => {
         const usersInDb = await helper.usersInDb()
         expect(usersInDb.length).toBe(helper.initialUsers.length + 1)
     })
+})
 
-  /*  test('Likes set automatically to 0', async () => {
+describe('Password validation', () => {
+    each([{
+        pwd: undefined,
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        pwd: '',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        pwd: 'a',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        pwd: 'ab',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        pwd: 'abc',
+        result: 201,
+        dbSize: helper.initialUsers.length + 1
+    }]).test('Validates password correctly', async (arg) => {
 
-        const newBlog = {
-            title: 'MTV uriheilu',
-            author: 'Petteri Lehto',
-            url: 'https://www.mtv3.fi/urheilu'
+        const newUser = {
+            username: 'newuser',
+            name: 'New User',
+            password: arg.pwd
         }
 
         await api
-            .post('/api/blogs')
-            .send(newBlog)
+            .post('/api/users')
+            .send(newUser)
+            .expect(arg.result)
 
-        const blog = await Blog.findOne({ title: newBlog.title })
-        expect(blog.likes).toBe(0)
+        const usersInDb = await helper.usersInDb()
+        expect(usersInDb.length).toBe(arg.dbSize)
     })
-*/
+})
+describe('Username validation', () => {
+    each([{
+        username: undefined,
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        username: '',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        username: 'a',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        username: 'ab',
+        result: 400,
+        dbSize: helper.initialUsers.length
+    }, {
+        username: 'abc',
+        result: 201,
+        dbSize: helper.initialUsers.length + 1
+    }]).test('Validates username correctly', async (arg) => {
 
-    test('Cannot add user with undefined password', async () => {
         const newUser = {
-            username: 'newuser',
-            name: 'New User'
+            username: arg.username,
+            name: 'New User',
+            password: 'arg.pwd'
+        }
+
+        await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(arg.result)
+
+        const usersInDb = await helper.usersInDb()
+        expect(usersInDb.length).toBe(arg.dbSize)
+    })
+
+    test('Cannot add with existing username', async () => {
+
+        const usersInDb = await helper.usersInDb()
+
+        const newUser = {
+            username: usersInDb[0].username,
+            name: 'New User',
+            password: 'arg.pwd'
         }
 
         await api
@@ -89,51 +150,12 @@ describe('Adding new user', () => {
             .send(newUser)
             .expect(400)
 
-        const usersInDb = await helper.usersInDb()
-        expect(usersInDb.length).toBe(helper.initialUsers.length)
-    })
-})
-/*
-describe('Deleting blogs', () => {
-    test('Deletes blog succesfully', async () => {
+        const users = await api.get('/api/users')
 
-        const blogs = await helper.blogsInDb()
-
-        await api
-            .delete(`/api/blogs/${blogs[0].id}`)
-            .expect(204)
-
-        const updatedBlogs = await api.get('/api/blogs')
-        expect(updatedBlogs.body.length).toBe(helper.initialBlogs.length - 1)
-        expect(updatedBlogs.body).toEqual(expect.not.stringMatching(blogs[0].title))
+        expect(users.body.length).toBe(helper.initialUsers.length)
     })
 })
 
-
-describe('Updates blog correctly', () => {
-    test('Likes are updated', async () => {
-
-        const blogs = await helper.blogsInDb()
-        const updatedLikes = blogs[0].likes + 10
-        const res = await api
-            .put(`/api/blogs/${blogs[0].id}`)
-            .send({ likes: updatedLikes })
-            .expect(200)
-
-        expect(res.body.likes).toBe(updatedLikes)
-    })
-
-    test('Cannot update nonexisting', async () => {
-
-        const blogs = await helper.nonExistingId()
-        const updatedLikes = 10
-        await api
-            .put(`/api/blogs/${blogs[0].id}`)
-            .send({ likes: updatedLikes })
-            .expect(400)
-    })
-})
-*/
 afterAll(() => {
     mongoose.connection.close()
 })

@@ -1,8 +1,12 @@
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
 
 const userSchema = mongoose.Schema({
     username: {
         type: String,
+        required: true,
+        minlength: 3,
+        unique: true,
         validate: {
             validator: function (v) {
                 return v !== undefined && v.length > 0
@@ -12,6 +16,8 @@ const userSchema = mongoose.Schema({
     },
     name: {
         type: String,
+        required: true,
+        minlength: 3,
         validate: {
             validator: function (v) {
                 return v !== undefined && v.length > 0

@@ -18,9 +18,13 @@ const setConnectionString = () => {
 let PORT = process.env.PORT
 let MONGO_CONNECTION_STRING = setConnectionString()
 let SALT_ROUNDS = process.env.SALT_ROUNDS || 10
+let PWD_MIN_LENGTH = 3
+let USERNAME_MIN_LENGTH = 3
 
 module.exports = {
     MONGO_CONNECTION_STRING,
     PORT,
-    SALT_ROUNDS
+    SALT_ROUNDS,
+    PWD_MIN_LENGTH,
+    USERNAME_MIN_LENGTH
 }

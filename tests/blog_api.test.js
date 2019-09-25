@@ -3,23 +3,10 @@ const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
 const api = supertest(app)
-const logger = require('../utils/logger')
 const helper = require('./test_helper')
 
 beforeEach(async () => {
-    logger.test('Deleting Blogs')
-    await Blog.deleteMany({})
-
-    const storedBlogs = await helper.initialBlogs
-        .map(b => new Blog(b))
-        .map(async (b) => {
-            const stored = await b.save()
-            logger.test('Blog stored to DB: ', stored)
-        })
-
-    await Promise.all(storedBlogs)
-    const blogs = await Blog.find({})
-    logger.test(`Initialization done ==> ${blogs.count} blogs stored to database`)
+    await helper.storeBlogsAndUsersToDb()
 })
 
 describe('Getting notes tests', () => {
@@ -39,6 +26,11 @@ describe('Getting notes tests', () => {
     test('Blogs are identified by id', async () => {
         const blogs = await api.get('/api/blogs')
         blogs.body.forEach(b => expect(b).toBeDefined())
+    })
+
+    test('Blog contains populated user', async() => {
+        const blogs = await api.get('/api/blogs')
+        blogs.body.map(b => b.user).forEach(u => expect(u).toBeDefined())
     })
 })
 
@@ -78,8 +70,24 @@ describe('Adding new notes', () => {
             .post('/api/blogs')
             .send(newBlog)
 
-        const blog = await Blog.findOne({ title: newBlog.title })
+        const blog = await Blog.findOne({title: newBlog.title})
         expect(blog.likes).toBe(0)
+    })
+
+    test('Blog contains user', async () => {
+        const newBlog = {
+            title: 'MTV uriheilu',
+            author: 'Petteri Lehto',
+            url: 'https://www.mtv3.fi/urheilu'
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+
+        const blog = await Blog.findOne({title: newBlog.title})
+        expect(blog.likes).toBe(0)
+        expect(blog.user).toBeDefined()
     })
 
     test('Cannot add with empty url', async () => {
@@ -138,7 +146,7 @@ describe('Updates blog correctly', () => {
         const updatedLikes = blogs[0].likes + 10
         const res = await api
             .put(`/api/blogs/${blogs[0].id}`)
-            .send({ likes: updatedLikes })
+            .send({likes: updatedLikes})
             .expect(200)
 
         expect(res.body.likes).toBe(updatedLikes)
@@ -150,7 +158,7 @@ describe('Updates blog correctly', () => {
         const updatedLikes = 10
         await api
             .put(`/api/blogs/${blogs[0].id}`)
-            .send({ likes: updatedLikes })
+            .send({likes: updatedLikes})
             .expect(400)
     })
 })

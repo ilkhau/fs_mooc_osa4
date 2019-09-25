@@ -33,7 +33,13 @@ const userSchema = mongoose.Schema({
             },
             message: props => `${props.value} is not a valid!`
         }
-    }
+    },
+    blogs: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Blog'
+        }
+    ]
 })
 
 userSchema.set('toJSON', {

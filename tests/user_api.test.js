@@ -1,26 +1,12 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
-const User = require('../models/user')
 const api = supertest(app)
-const logger = require('../utils/logger')
 const helper = require('./test_helper')
 const each = require('jest-each').default;
 
 beforeEach(async () => {
-    logger.test('Deleting Blogs')
-    await User.deleteMany({})
-
-    const storedUsers = await helper.initialUsers
-        .map(u => new User(u))
-        .map(async (u) => {
-            const stored = await u.save()
-            logger.test('User stored to DB: ', stored)
-        })
-
-    await Promise.all(storedUsers)
-    const users = await User.find({})
-    logger.test(`Initialization done ==> ${users.length} users stored to database`)
+    await helper.storeBlogsAndUsersToDb()
 })
 
 describe('Getting users', () => {
@@ -33,13 +19,17 @@ describe('Getting users', () => {
 
     test('All users are returned', async () => {
         const users = await api.get('/api/users')
-
         expect(users.body.length).toBe(helper.initialUsers.length)
     })
 
     test('Users are identified by id', async () => {
         const users = await api.get('/api/users')
         users.body.forEach(u => expect(u).toBeDefined())
+    })
+
+    test('Blogs are not empty when user has creted blog', async () => {
+        const users = await api.get('/api/users')
+        users.body.map(u => u.blogs).forEach(b => expect(b).toBeDefined())
     })
 })
 

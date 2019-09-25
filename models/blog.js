@@ -20,7 +20,11 @@ const blogSchema = mongoose.Schema({
             message: props => `${props.value} is not a valid url!`
         }
     },
-    likes: Number
+    likes: Number,
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
 })
 
 blogSchema.set('toJSON', {

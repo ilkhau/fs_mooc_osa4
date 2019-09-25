@@ -2,6 +2,40 @@ const Blog = require('../models/blog')
 const User = require('../models/user')
 const logger = require('../utils/logger')
 
+const storeBlogsAndUsersToDb = async () => {
+    logger.test('Deleting Blogs')
+
+    await Blog.deleteMany({})
+    await User.deleteMany({})
+
+    const storedUsers = await initialUsers
+        .map(u => new User(u))
+        .map(async (u) => {
+            const stored = await u.save()
+            logger.test('User stored to DB: ', stored)
+        })
+
+    await Promise.all(storedUsers)
+    const users = await User.find({})
+
+    const storedBlogs = users
+        .map((u, i) => new Blog({
+            title: initialBlogs[i].title,
+            author: initialBlogs[i].author,
+            url: initialBlogs[i].url,
+            likes: initialBlogs[i].likes,
+            user: u._id
+        }))
+        .map(async (b) => {
+            const stored = await b.save()
+            logger.test('Blog stored to DB: ', stored)
+        })
+
+    await Promise.all(storedBlogs)
+    const blogs = await Blog.find({})
+    logger.test(`Initialization done ==> ${blogs.count} blogs stored to database`)
+}
+
 const initialUsers = [
     {
         username: 'mattiv',
@@ -16,6 +50,21 @@ const initialUsers = [
     {
         username: 'oskariolem',
         name: 'Oskari Olematon',
+        password: '234234234243'
+    },
+    {
+        username: 'elmerik',
+        name: 'Elmeri Iloinen',
+        password: '234234234243'
+    },
+    {
+        username: 'johndoe',
+        name: 'Tuntematon Sotilas',
+        password: '234234234243'
+    },
+    {
+        username: 'kk_kaput',
+        name: 'Rikki Ehjä',
         password: '234234234243'
     }
 ]
@@ -106,6 +155,7 @@ const nonExistingId = async () => {
 }
 
 module.exports = {
+    storeBlogsAndUsersToDb,
     initialBlogs, logBlogs, blogsInDb, nonExistingId,
     initialUsers, logUsers, usersInDb, nonExistingUserId
 }

@@ -17,8 +17,7 @@ const storeBlogsAndUsersToDb = async () => {
             passwordHash: bcrypt.hashSync(u.password, config.SALT_ROUNDS)
         }))
         .map(async (u) => {
-            const stored = await u.save()
-            logger.test('User stored to DB: ', stored)
+            return await u.save()
         })
 
     await Promise.all(storedUsers)
@@ -33,13 +32,10 @@ const storeBlogsAndUsersToDb = async () => {
             user: u._id
         }))
         .map(async (b) => {
-            const stored = await b.save()
-            logger.test('Blog stored to DB: ', stored)
+            return await b.save()
         })
 
     await Promise.all(storedBlogs)
-    const blogs = await Blog.find({})
-    logger.test(`Initialization done ==> ${blogs.count} blogs stored to database`)
 }
 
 const initialUsers = [

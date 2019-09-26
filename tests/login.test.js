@@ -1,8 +1,8 @@
+const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
 const helper = require('./test_helper')
-const each = require('jest-each').default
 
 beforeEach(async () => {
     await helper.storeBlogsAndUsersToDb()
@@ -73,4 +73,8 @@ describe('Login tests', () => {
             .expect(401)
 
     })
+})
+
+afterAll(() => {
+    mongoose.connection.close()
 })

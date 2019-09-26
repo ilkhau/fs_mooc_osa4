@@ -2,6 +2,8 @@ const blogsRouter = require('express').Router()
 const logger = require('../utils/logger')
 const Blog = require('../models/blog')
 const User = require('../models/user')
+const config = require('../utils/config')
+const jwt = require('jsonwebtoken')
 
 blogsRouter.get('/', async (request, response) => {
     const blogs = await Blog.find({}).populate('user')
@@ -21,13 +23,19 @@ blogsRouter.post('/', async (request, response, next) => {
         })
     }
 
-    const users = await User.find({})
-    const blog = contentToBlog(request, users[0]._id)
-
     try {
+
+        const decodedToken = jwt.verify(request.token, config.SECRET)
+        const user = await User.findById(decodedToken.id)
+        const blog = contentToBlog(request, user._id)
         const result = await blog.save()
+        user.blogs = user.blogs.concat(result._id)
+        const storedUsed = await user.save()
+
         logger.info('Blog stored to DB: ', result)
-        response.status(201).json(result)
+        logger.info('User update in DB: ', storedUsed)
+
+        response.status(201).json(result.toJSON())
     } catch (error) {
         logger.error('Error storing new blog: ', error)
         next(error)
@@ -35,7 +43,7 @@ blogsRouter.post('/', async (request, response, next) => {
 })
 
 blogsRouter.put('/:id', async (request, response, next) => {
-    try{
+    try {
 
         const body = request.body
         const updated = {
@@ -43,9 +51,9 @@ blogsRouter.put('/:id', async (request, response, next) => {
         }
 
         const updatedBlog = await Blog.findOneAndUpdate(
-            { _id: request.params.id },
+            {_id: request.params.id},
             updated,
-            { new: true })
+            {new: true})
 
         logger.info('Updated: ', updatedBlog)
         response.json(updatedBlog.toJSON())
@@ -58,7 +66,7 @@ blogsRouter.put('/:id', async (request, response, next) => {
 
 blogsRouter.delete('/:id', async (request, response, next) => {
     try {
-        await Blog.findOneAndRemove({ _id: request.params.id })
+        await Blog.findOneAndRemove({_id: request.params.id})
         response.status(204).end()
     } catch (error) {
         logger.error('Error deleting blog: ', error)

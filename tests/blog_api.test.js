@@ -1,9 +1,25 @@
+const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const api = supertest(app)
 const helper = require('./test_helper')
+
+const loginUser = async (username, password) => {
+
+    const loginData = {
+        username: username,
+        password: password
+    }
+
+    const response = await api
+        .post('/api/login')
+        .send(loginData)
+
+    return response.body.token
+}
 
 beforeEach(async () => {
     await helper.storeBlogsAndUsersToDb()
@@ -28,7 +44,7 @@ describe('Getting notes tests', () => {
         blogs.body.forEach(b => expect(b).toBeDefined())
     })
 
-    test('Blog contains populated user', async() => {
+    test('Blog contains populated user', async () => {
         const blogs = await api.get('/api/blogs')
         blogs.body.map(b => b.user).forEach(u => expect(u).toBeDefined())
     })
@@ -44,8 +60,11 @@ describe('Adding new notes', () => {
             likes: 55,
         }
 
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', 'application/json; charset=utf-8')
@@ -54,8 +73,48 @@ describe('Adding new notes', () => {
         const blogsInDb = await helper.blogsInDb()
         expect(blogs.body.length).toBe(blogsInDb.length)
 
-        const urls = blogs.body.map(b => b.url)
-        expect(urls).toContain(newBlog.url)
+        const storedBlog = blogs.body.filter(b => b.url === newBlog.url)[0]
+        expect(storedBlog.url).toBe(newBlog.url)
+        expect(storedBlog.user.username).toBe(helper.initialUsers[0].username)
+    })
+
+    test('Cannot add blog when not logged in', async () => {
+
+        const newBlog = {
+            title: 'MTV uriheilu',
+            author: 'Petteri Lehto',
+            url: 'https://www.mtv3.fi/urheilu',
+            likes: 55,
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+    })
+
+    test('Cannot add blog when passing spoofed bearer', async () => {
+
+        const newBlog = {
+            title: 'MTV uriheilu',
+            author: 'Petteri Lehto',
+            url: 'https://www.mtv3.fi/urheilu',
+            likes: 55,
+        }
+
+        const user = await User.findOne({username: helper.initialUsers[0].username})
+        const userToken = {
+            username: user.username,
+            id: user._id
+        }
+
+        const token = jwt.sign(userToken, 'spoofedSecret')
+
+        await api
+            .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
+            .send(newBlog)
+            .expect(401)
     })
 
     test('Likes set automatically to 0', async () => {
@@ -66,8 +125,11 @@ describe('Adding new notes', () => {
             url: 'https://www.mtv3.fi/urheilu'
         }
 
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
 
         const blog = await Blog.findOne({title: newBlog.title})
@@ -81,8 +143,11 @@ describe('Adding new notes', () => {
             url: 'https://www.mtv3.fi/urheilu'
         }
 
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
 
         const blog = await Blog.findOne({title: newBlog.title})
@@ -95,9 +160,11 @@ describe('Adding new notes', () => {
             title: 'MTV uriheilu',
             author: 'Petteri Lehto'
         }
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
 
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
             .expect(400)
 
@@ -112,8 +179,11 @@ describe('Adding new notes', () => {
             url: 'https://www.mtv3.fi/urheilu'
         }
 
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
             .expect(400)
 

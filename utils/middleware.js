@@ -12,11 +12,16 @@ const errorHandler = (error, request, response, next) => {
         response.status(400).json({error: 'Request cannot be processed'})
     } else if (error.name === 'MongoError' && error.code === 11000) {
         response.status(400).json({error: 'Cannot add duplicate id'})
+    } else if (error.name === 'JsonWebTokenError') {
+        return response.status(401).json({
+            error: 'invalid token'
+        })
     }
     next(error)
 }
 
 const unknownEndpoint = (req, res) => {
+    logger.error('Unknown endpoint called')
     res.status(404).send({error: 'unknown endpoint'})
 }
 

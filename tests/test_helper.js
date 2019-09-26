@@ -1,3 +1,5 @@
+const bcrypt = require('bcrypt')
+const config = require('../utils/config')
 const Blog = require('../models/blog')
 const User = require('../models/user')
 const logger = require('../utils/logger')
@@ -9,7 +11,11 @@ const storeBlogsAndUsersToDb = async () => {
     await User.deleteMany({})
 
     const storedUsers = await initialUsers
-        .map(u => new User(u))
+        .map(u => new User({
+            username: u.username,
+            name: u.name,
+            passwordHash: bcrypt.hashSync(u.password, config.SALT_ROUNDS)
+        }))
         .map(async (u) => {
             const stored = await u.save()
             logger.test('User stored to DB: ', stored)

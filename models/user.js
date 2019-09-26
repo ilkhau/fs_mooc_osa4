@@ -25,7 +25,7 @@ const userSchema = mongoose.Schema({
             message: props => `${props.value} is not a valid!`
         }
     },
-    password: {
+    passwordHash: {
         type: String,
         validate: {
             validator: function (v) {

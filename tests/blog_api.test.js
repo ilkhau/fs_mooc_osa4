@@ -198,13 +198,43 @@ describe('Deleting blogs', () => {
 
         const blogs = await helper.blogsInDb()
 
+        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+
         await api
             .delete(`/api/blogs/${blogs[0].id}`)
+            .set('Authorization', 'Bearer ' + token)
             .expect(204)
 
         const updatedBlogs = await api.get('/api/blogs')
         expect(updatedBlogs.body.length).toBe(helper.initialBlogs.length - 1)
         expect(updatedBlogs.body).toEqual(expect.not.stringMatching(blogs[0].title))
+    })
+
+    test('Only creator can delete the blog', async () => {
+
+        const blogs = await helper.blogsInDb()
+
+        const token = await loginUser(helper.initialUsers[1].username, helper.initialUsers[1].password)
+
+        await api
+            .delete(`/api/blogs/${blogs[0].id}`)
+            .set('Authorization', 'Bearer ' + token)
+            .expect(401)
+
+        const updatedBlogs = await api.get('/api/blogs')
+        expect(updatedBlogs.body.length).toBe(helper.initialBlogs.length)
+    })
+
+    test('Cannot delete blog when not logged in', async () => {
+
+        const blogs = await helper.blogsInDb()
+
+        await api
+            .delete(`/api/blogs/${blogs[0].id}`)
+            .expect(401)
+
+        const updatedBlogs = await api.get('/api/blogs')
+        expect(updatedBlogs.body.length).toBe(helper.initialBlogs.length)
     })
 })
 

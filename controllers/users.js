@@ -28,7 +28,7 @@ usersRouter.post('/', async (request, response, next) => {
         return new User({
             username: body.username || '',
             name: body.name || '',
-            password: pwd || '',
+            passwordHash: pwd || '',
         })
     }
 
@@ -43,37 +43,4 @@ usersRouter.post('/', async (request, response, next) => {
     }
 })
 
-/*
-usersRouter.put('/:id', async (request, response, next) => {
-    try{
-
-        const body = request.body
-        const updated = {
-            likes: body.likes,
-        }
-
-        const updatedBlog = await Blog.findOneAndUpdate(
-            { _id: request.params.id },
-            updated,
-            { new: true })
-
-        logger.info('Updated: ', updatedBlog)
-        response.json(updatedBlog.toJSON())
-
-    } catch (error) {
-        logger.error('Error Updating blog count blog: ', error)
-        next(error)
-    }
-})
-
-usersRouter.delete('/:id', async (request, response, next) => {
-    try {
-        await Blog.findOneAndRemove({ _id: request.params.id })
-        response.status(204).end()
-    } catch (error) {
-        logger.error('Error deleting blog: ', error)
-        next(error)
-    }
-})
-*/
 module.exports = usersRouter

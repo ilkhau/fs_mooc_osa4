@@ -11,6 +11,8 @@ const middleware = require('./utils/middleware')
 const logger = require('./utils/logger')
 const auth = require('./utils/authorization')
 
+logger.info('Config: ', config)
+
 const mongoUrl = config.MONGO_CONNECTION_STRING
 
 mongoose.connect(mongoUrl, { useNewUrlParser: true } )

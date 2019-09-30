@@ -84,6 +84,10 @@ describe('Adding new blogs', () => {
         const storedBlog = blogs.body.filter(b => b.url === newBlog.url)[0]
         expect(storedBlog.url).toBe(newBlog.url)
         expect(storedBlog.user.username).toBe(helper.initialUsers[0].username)
+
+        const userInDb = (await User.findOne({username: storedBlog.user.username})).toJSON()
+        expect(userInDb.blogs.map(b => b._id.toString())).toContain(storedBlog.id.toString())
+
     })
 
     test('Cannot add blog when not logged in', async () => {
@@ -189,7 +193,6 @@ describe('Adding new blogs', () => {
 
         const blogs = await api.get('/api/blogs')
         expect(blogs.body.length).toBe(helper.initialBlogs.length)
-
     })
 })
 

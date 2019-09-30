@@ -5,25 +5,28 @@ const User = require('../models/user')
 const logger = require('../utils/logger')
 
 const storeBlogsAndUsersToDb = async () => {
-    logger.test('Deleting Blogs')
+    logger.test('Emptying database')
 
     await Blog.deleteMany({})
     await User.deleteMany({})
 
-    const storedUsers = await initialUsers
+    logger.test('Database emptied')
+
+    const userTasks = await initialUsers
         .map(u => new User({
             username: u.username,
             name: u.name,
             passwordHash: bcrypt.hashSync(u.password, config.SALT_ROUNDS)
         }))
         .map(async (u) => {
-            return await u.save()
+            const user = await u.save()
+            return user
         })
 
-    await Promise.all(storedUsers)
+    await Promise.all(userTasks)
     const users = await User.find({})
 
-    const storedBlogs = users
+    const blogTasks = users
         .map((u, i) => new Blog({
             title: initialBlogs[i].title,
             author: initialBlogs[i].author,
@@ -32,10 +35,18 @@ const storeBlogsAndUsersToDb = async () => {
             user: u._id
         }))
         .map(async (b) => {
-            return await b.save()
+            const blog = await b.save()
+            const user = await User.findById(blog.user._id)
+            user.blogs = user.blogs.concat(b._id)
+            return await user.save()
         })
 
-    await Promise.all(storedBlogs)
+    await Promise.all(blogTasks)
+
+    const storedBlogs = await Blog.find({})
+    const storedUsers = await User.find({})
+
+    logger.test('DB initialized')
 }
 
 const initialUsers = [
@@ -125,7 +136,7 @@ const usersInDb = async () => {
 }
 
 const blogsInDb = async () => {
-    const blogs = await Blog.find({})
+    const blogs = await Blog.find({}).populate('user')
     return blogs.map(b => b.toJSON())
 }
 

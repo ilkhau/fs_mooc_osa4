@@ -65,14 +65,26 @@ blogsRouter.put('/:id', async (request, response, next) => {
 })
 
 blogsRouter.delete('/:id', async (request, response, next) => {
+
+
+    const validateBlogAndUser = (blog, user) => {
+        return user !== undefined && user !== null && blog !== undefined && blog !== null &&
+            blog.user._id.toString() === user._id.toString()
+    }
+
     try {
         const decodedToken = jwt.verify(request.token, config.SECRET)
         const user = await User.findById(decodedToken.id)
+        const blog = await Blog.findById({_id: request.params.id})
 
-        const result = await Blog.findOneAndRemove({_id: request.params.id, user: user._id})
-        if (result === undefined || result === null) {
+        if (!validateBlogAndUser(blog, user)) {
             response.status(401).json({error: 'Cannot delete only own blogs'})
         } else {
+            user.blogs = user.blogs.filter(b => b._id.toString() !== blog._id.toString())
+
+            await blog.delete()
+            await user.save()
+
             response.status(204).end()
         }
     } catch (error) {

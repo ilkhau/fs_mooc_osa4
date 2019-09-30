@@ -21,11 +21,19 @@ const loginUser = async (username, password) => {
     return response.body.token
 }
 
+const newBlog = () => {
+    return {
+        title: 'MTV uriheilu',
+        author: 'Petteri Lehto',
+        url: 'https://www.mtv3.fi/urheilu'
+    }
+}
+
 beforeEach(async () => {
     await helper.storeBlogsAndUsersToDb()
 })
 
-describe('Getting notes tests', () => {
+describe('Getting blogs tests', () => {
 
     test('Getting all return JSON as content-type', async () => {
         await api.get('/api/blogs')
@@ -50,7 +58,7 @@ describe('Getting notes tests', () => {
     })
 })
 
-describe('Adding new notes', () => {
+describe('Adding new blogs', () => {
     test('Add new note succesfully', async () => {
 
         const newBlog = {
@@ -119,40 +127,32 @@ describe('Adding new notes', () => {
 
     test('Likes set automatically to 0', async () => {
 
-        const newBlog = {
-            title: 'MTV uriheilu',
-            author: 'Petteri Lehto',
-            url: 'https://www.mtv3.fi/urheilu'
-        }
+        const blog = newBlog()
 
         const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
 
         await api
             .post('/api/blogs')
             .set('Authorization', 'Bearer ' + token)
-            .send(newBlog)
+            .send(blog)
 
-        const blog = await Blog.findOne({title: newBlog.title})
-        expect(blog.likes).toBe(0)
+        const storedBlog = await Blog.findOne({title: blog.title})
+        expect(storedBlog.likes).toBe(0)
     })
 
     test('Blog contains user', async () => {
-        const newBlog = {
-            title: 'MTV uriheilu',
-            author: 'Petteri Lehto',
-            url: 'https://www.mtv3.fi/urheilu'
-        }
+        const blog = newBlog()
 
         const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
 
         await api
             .post('/api/blogs')
             .set('Authorization', 'Bearer ' + token)
-            .send(newBlog)
+            .send(blog)
 
-        const blog = await Blog.findOne({title: newBlog.title})
-        expect(blog.likes).toBe(0)
-        expect(blog.user).toBeDefined()
+        const storedBlog = await Blog.findOne({title: blog.title})
+        expect(storedBlog.likes).toBe(0)
+        expect(storedBlog.user).toBeDefined()
     })
 
     test('Cannot add with empty url', async () => {
@@ -193,12 +193,15 @@ describe('Adding new notes', () => {
     })
 })
 
+
 describe('Deleting blogs', () => {
     test('Deletes blog succesfully', async () => {
 
         const blogs = await helper.blogsInDb()
 
-        const token = await loginUser(helper.initialUsers[0].username, helper.initialUsers[0].password)
+        const userFromDb = await User.findById(blogs[0].user.id)
+        const user = helper.initialUsers.filter(u => u.username === userFromDb.username)[0]
+        const token = await loginUser(user.username, user.password)
 
         await api
             .delete(`/api/blogs/${blogs[0].id}`)
@@ -210,11 +213,33 @@ describe('Deleting blogs', () => {
         expect(updatedBlogs.body).toEqual(expect.not.stringMatching(blogs[0].title))
     })
 
+    test('Blog is removed from user when deleted', async () => {
+
+        const blogs = await helper.blogsInDb()
+
+        const userFromDb = await User.findById(blogs[0].user.id)
+        const user = helper.initialUsers.filter(u => u.username === userFromDb.username)[0]
+        const token = await loginUser(user.username, user.password)
+
+        await api
+            .delete(`/api/blogs/${blogs[0].id}`)
+            .set('Authorization', 'Bearer ' + token)
+            .expect(204)
+
+        const usersFromDb = await helper.usersInDb()
+        const updatedUser = usersFromDb.filter(u => u.username === user.username)[0]
+
+        expect(updatedUser.blogs.length).toBe(0)
+    })
+
+
     test('Only creator can delete the blog', async () => {
 
         const blogs = await helper.blogsInDb()
 
-        const token = await loginUser(helper.initialUsers[1].username, helper.initialUsers[1].password)
+        const userFromDb = await User.findById(blogs[1].user.id)
+        const user = helper.initialUsers.filter(u => u.username === userFromDb.username)[0]
+        const token = await loginUser(user.username, user.password)
 
         await api
             .delete(`/api/blogs/${blogs[0].id}`)
